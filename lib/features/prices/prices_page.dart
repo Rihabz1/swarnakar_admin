@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
 import '../../providers/auth_providers.dart';
 import '../../widgets/section_card.dart';
@@ -24,13 +25,16 @@ class _PricesPageState extends ConsumerState<PricesPage> {
   final _gold22Controller = TextEditingController();
   final _gold18Controller = TextEditingController();
   final _silverController = TextEditingController();
+  late final ProviderSubscription<AsyncValue<Map<String, dynamic>?>>
+      _pricesSubscription;
   bool _initialized = false;
   bool _saving = false;
 
   @override
   void initState() {
     super.initState();
-    ref.listen<AsyncValue<Map<String, dynamic>?>>(pricesProvider, (prev, next) {
+    _pricesSubscription = ref.listenManual<AsyncValue<Map<String, dynamic>?>>(
+        pricesProvider, (prev, next) {
       if (!next.hasValue || _initialized) {
         return;
       }
@@ -47,6 +51,7 @@ class _PricesPageState extends ConsumerState<PricesPage> {
 
   @override
   void dispose() {
+    _pricesSubscription.close();
     _gold24Controller.dispose();
     _gold22Controller.dispose();
     _gold18Controller.dispose();
@@ -67,6 +72,18 @@ class _PricesPageState extends ConsumerState<PricesPage> {
       return 'Enter a valid number.';
     }
     return null;
+  }
+
+  String? _formatUpdatedAt(dynamic value) {
+    if (value == null) return null;
+    DateTime? date;
+    if (value is Timestamp) {
+      date = value.toDate();
+    } else if (value is DateTime) {
+      date = value;
+    }
+    if (date == null) return null;
+    return DateFormat('dd MMM yyyy, HH:mm').format(date);
   }
 
   Future<void> _save() async {
@@ -102,6 +119,8 @@ class _PricesPageState extends ConsumerState<PricesPage> {
   @override
   Widget build(BuildContext context) {
     final pricesAsync = ref.watch(pricesProvider);
+    final updatedAtText = _formatUpdatedAt(pricesAsync.valueOrNull?['updatedAt']);
+    final theme = Theme.of(context);
     return SingleChildScrollView(
       child: SectionCard(
         title: 'Current Prices',
@@ -169,6 +188,14 @@ class _PricesPageState extends ConsumerState<PricesPage> {
                     : const Text('Save prices'),
               ),
             ),
+            if (updatedAtText != null) ...[
+              const SizedBox(height: 12),
+              Text(
+                'Last updated: $updatedAtText',
+                style: theme.textTheme.bodySmall
+                    ?.copyWith(color: theme.hintColor),
+              ),
+            ],
           ],
         ),
       ),

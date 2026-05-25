@@ -24,6 +24,8 @@ class _SubscriptionsPageState extends ConsumerState<SubscriptionsPage> {
   final _planController = TextEditingController();
   final _statusController = TextEditingController();
   final _dateController = TextEditingController();
+  late final ProviderSubscription<AsyncValue<Map<String, dynamic>?>>
+      _subscriptionSubscription;
   DateTime? _expiresAt;
   bool _initialized = false;
   bool _saving = false;
@@ -32,8 +34,9 @@ class _SubscriptionsPageState extends ConsumerState<SubscriptionsPage> {
   @override
   void initState() {
     super.initState();
-    ref.listen<AsyncValue<Map<String, dynamic>?>>(subscriptionProvider,
-        (prev, next) {
+    _subscriptionSubscription =
+        ref.listenManual<AsyncValue<Map<String, dynamic>?>>(
+            subscriptionProvider, (prev, next) {
       if (!next.hasValue || _initialized) {
         return;
       }
@@ -53,6 +56,7 @@ class _SubscriptionsPageState extends ConsumerState<SubscriptionsPage> {
 
   @override
   void dispose() {
+    _subscriptionSubscription.close();
     _planController.dispose();
     _statusController.dispose();
     _dateController.dispose();

@@ -70,72 +70,86 @@ class _ChangePasswordPageState extends ConsumerState<ChangePasswordPage> {
     return SingleChildScrollView(
       child: SectionCard(
         title: 'Change Password',
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              TextFormField(
-                controller: _currentController,
-                obscureText: true,
-                decoration: const InputDecoration(
-                  labelText: 'Current password',
+        child: AutofillGroup(
+          child: Form(
+            key: _formKey,
+            child: Column(
+              children: [
+                TextFormField(
+                  controller: _currentController,
+                  keyboardType: TextInputType.visiblePassword,
+                  autofillHints: const <String>[AutofillHints.oneTimeCode],
+                  enableSuggestions: false,
+                  autocorrect: false,
+                  obscureText: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Current password',
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Current password is required.';
+                    }
+                    return null;
+                  },
                 ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Current password is required.';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _newController,
-                obscureText: true,
-                decoration: const InputDecoration(
-                  labelText: 'New password',
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _newController,
+                  keyboardType: TextInputType.visiblePassword,
+                  autofillHints: const <String>[AutofillHints.newPassword],
+                  enableSuggestions: false,
+                  autocorrect: false,
+                  obscureText: true,
+                  decoration: const InputDecoration(
+                    labelText: 'New password',
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'New password is required.';
+                    }
+                    if (value.length < 8) {
+                      return 'Password must be at least 8 characters.';
+                    }
+                    return null;
+                  },
                 ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'New password is required.';
-                  }
-                  if (value.length < 8) {
-                    return 'Password must be at least 8 characters.';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _confirmController,
-                obscureText: true,
-                decoration: const InputDecoration(
-                  labelText: 'Confirm password',
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _confirmController,
+                  keyboardType: TextInputType.visiblePassword,
+                  autofillHints: const <String>[AutofillHints.newPassword],
+                  enableSuggestions: false,
+                  autocorrect: false,
+                  obscureText: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Confirm password',
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Confirm password is required.';
+                    }
+                    if (value != _newController.text) {
+                      return 'Passwords do not match.';
+                    }
+                    return null;
+                  },
                 ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Confirm password is required.';
-                  }
-                  if (value != _newController.text) {
-                    return 'Passwords do not match.';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 24),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: ElevatedButton(
-                  onPressed: _loading ? null : _changePassword,
-                  child: _loading
-                      ? const SizedBox(
-                          height: 18,
-                          width: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Text('Update password'),
+                const SizedBox(height: 24),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: ElevatedButton(
+                    onPressed: _loading ? null : _changePassword,
+                    child: _loading
+                        ? const SizedBox(
+                            height: 18,
+                            width: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Text('Update password'),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

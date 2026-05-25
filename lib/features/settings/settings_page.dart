@@ -21,14 +21,17 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   final _companyController = TextEditingController();
   final _currencyController = TextEditingController();
   final _localeController = TextEditingController();
+  late final ProviderSubscription<AsyncValue<Map<String, dynamic>?>>
+      _settingsSubscription;
   bool _initialized = false;
   bool _saving = false;
 
   @override
   void initState() {
     super.initState();
-    ref.listen<AsyncValue<Map<String, dynamic>?>>(settingsProvider,
-        (prev, next) {
+    _settingsSubscription =
+        ref.listenManual<AsyncValue<Map<String, dynamic>?>>(
+            settingsProvider, (prev, next) {
       if (!next.hasValue || _initialized) {
         return;
       }
@@ -44,6 +47,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
 
   @override
   void dispose() {
+    _settingsSubscription.close();
     _companyController.dispose();
     _currencyController.dispose();
     _localeController.dispose();
