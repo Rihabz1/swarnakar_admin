@@ -38,7 +38,11 @@ class UsersPage extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Email: ${data['email'] ?? '--'}'),
+                    Text('Phone: ${data['phone'] ?? '--'}'),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Subscription: ${data['isSubscribed'] == true ? 'Active' : 'Inactive'}',
+                    ),
                     const SizedBox(height: 8),
                     DropdownButtonFormField<String>(
                       value: role,
@@ -64,14 +68,20 @@ class UsersPage extends ConsumerWidget {
           child: DataTable(
             columns: const [
               DataColumn(label: Text('Name')),
-              DataColumn(label: Text('Email')),
+              DataColumn(label: Text('Phone')),
+              DataColumn(label: Text('Subscription')),
               DataColumn(label: Text('Role')),
             ],
             rows: [
               for (final doc in docs)
                 DataRow(cells: [
                   DataCell(Text(doc.data()['name']?.toString() ?? '--')),
-                  DataCell(Text(doc.data()['email']?.toString() ?? '--')),
+                  DataCell(Text(doc.data()['phone']?.toString() ?? '--')),
+                  DataCell(
+                    Text(
+                      doc.data()['isSubscribed'] == true ? 'Active' : 'Inactive',
+                    ),
+                  ),
                   DataCell(
                     DropdownButton<String>(
                       value: doc.data()['role']?.toString() ?? 'staff',
