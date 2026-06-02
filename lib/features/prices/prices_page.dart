@@ -21,14 +21,35 @@ class PricesPage extends ConsumerStatefulWidget {
 
 class _PricesPageState extends ConsumerState<PricesPage> {
   final _formKey = GlobalKey<FormState>();
-  final _gold24Controller = TextEditingController();
-  final _gold22Controller = TextEditingController();
-  final _gold18Controller = TextEditingController();
-  final _silverController = TextEditingController();
+  final Map<String, TextEditingController> _controllers = {
+    'gold_21k': TextEditingController(),
+    'gold_21k_old': TextEditingController(),
+    'gold_22k': TextEditingController(),
+    'gold_22k_old': TextEditingController(),
+    'gold_paka': TextEditingController(),
+    'gold_tukra': TextEditingController(),
+    'silver_21k': TextEditingController(),
+    'silver_22k': TextEditingController(),
+    'silver_acid_kaim': TextEditingController(),
+    'silver_chandi': TextEditingController(),
+  };
   late final ProviderSubscription<AsyncValue<Map<String, dynamic>?>>
       _pricesSubscription;
   bool _initialized = false;
   bool _saving = false;
+
+  final List<_PriceField> _fields = const [
+    _PriceField(keyName: 'gold_21k', label: 'Gold 21K'),
+    _PriceField(keyName: 'gold_21k_old', label: 'Gold 21K (Old)'),
+    _PriceField(keyName: 'gold_22k', label: 'Gold 22K'),
+    _PriceField(keyName: 'gold_22k_old', label: 'Gold 22K (Old)'),
+    _PriceField(keyName: 'gold_paka', label: 'Gold Paka'),
+    _PriceField(keyName: 'gold_tukra', label: 'Gold Tukra'),
+    _PriceField(keyName: 'silver_21k', label: 'Silver 21K'),
+    _PriceField(keyName: 'silver_22k', label: 'Silver 22K'),
+    _PriceField(keyName: 'silver_acid_kaim', label: 'Silver Acid Kaim'),
+    _PriceField(keyName: 'silver_chandi', label: 'Silver Chandi'),
+  ];
 
   @override
   void initState() {
@@ -40,10 +61,10 @@ class _PricesPageState extends ConsumerState<PricesPage> {
       }
       final data = next.value;
       if (data != null) {
-        _gold24Controller.text = _formatNumber(data['gold24k']);
-        _gold22Controller.text = _formatNumber(data['gold22k']);
-        _gold18Controller.text = _formatNumber(data['gold18k']);
-        _silverController.text = _formatNumber(data['silver']);
+        for (final field in _fields) {
+          _controllers[field.keyName]?.text =
+              _formatNumber(data[field.keyName]);
+        }
       }
       _initialized = true;
     });
@@ -52,10 +73,9 @@ class _PricesPageState extends ConsumerState<PricesPage> {
   @override
   void dispose() {
     _pricesSubscription.close();
-    _gold24Controller.dispose();
-    _gold22Controller.dispose();
-    _gold18Controller.dispose();
-    _silverController.dispose();
+    for (final controller in _controllers.values) {
+      controller.dispose();
+    }
     super.dispose();
   }
 
@@ -93,12 +113,14 @@ class _PricesPageState extends ConsumerState<PricesPage> {
     setState(() => _saving = true);
     try {
       final service = ref.read(adminFirestoreServiceProvider);
-      await service.setDoc('prices', 'current', {
-        'gold24k': double.parse(_gold24Controller.text.trim()),
-        'gold22k': double.parse(_gold22Controller.text.trim()),
-        'gold18k': double.parse(_gold18Controller.text.trim()),
-        'silver': double.parse(_silverController.text.trim()),
+      final data = <String, dynamic>{
+        for (final field in _fields)
+          field.keyName:
+              double.parse(_controllers[field.keyName]!.text.trim()),
         'updatedAt': FieldValue.serverTimestamp(),
+      };
+      await service.setDoc('prices', 'current', {
+        ...data,
       });
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -136,41 +158,17 @@ class _PricesPageState extends ConsumerState<PricesPage> {
               key: _formKey,
               child: Column(
                 children: [
-                  TextFormField(
-                    controller: _gold24Controller,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: 'Gold 24K',
+                  for (final field in _fields) ...[
+                    TextFormField(
+                      controller: _controllers[field.keyName],
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        labelText: field.label,
+                      ),
+                      validator: _requiredNumber,
                     ),
-                    validator: _requiredNumber,
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _gold22Controller,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: 'Gold 22K',
-                    ),
-                    validator: _requiredNumber,
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _gold18Controller,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: 'Gold 18K',
-                    ),
-                    validator: _requiredNumber,
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _silverController,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: 'Silver',
-                    ),
-                    validator: _requiredNumber,
-                  ),
+                    const SizedBox(height: 16),
+                  ],
                 ],
               ),
             ),
@@ -201,4 +199,11 @@ class _PricesPageState extends ConsumerState<PricesPage> {
       ),
     );
   }
+}
+
+class _PriceField {
+  const _PriceField({required this.keyName, required this.label});
+
+  final String keyName;
+  final String label;
 }
