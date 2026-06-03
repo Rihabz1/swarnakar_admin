@@ -70,11 +70,12 @@ class _SubscriptionsPageState extends ConsumerState<SubscriptionsPage> {
     });
     try {
       final service = ref.read(adminFirestoreServiceProvider);
-      final snapshot = await service
-          .collection('users')
-          .where('phone', isEqualTo: phone)
-          .limit(1)
-          .get();
+      final snapshot =
+          await service
+              .collection('users')
+              .where('phone', isEqualTo: phone)
+              .limit(1)
+              .get();
       if (!mounted) return;
       if (snapshot.docs.isEmpty) {
         setState(() {
@@ -93,9 +94,10 @@ class _SubscriptionsPageState extends ConsumerState<SubscriptionsPage> {
       setState(() {
         _userSnapshot = doc;
         _isSubscribed = data['isSubscribed'] == true;
-        _plan = (data['plan']?.toString().isNotEmpty ?? false)
-            ? data['plan'].toString()
-            : 'monthly';
+        _plan =
+            (data['plan']?.toString().isNotEmpty ?? false)
+                ? data['plan'].toString()
+                : 'monthly';
         _expiresAt = expiresAt;
         _dateController.text =
             expiresAt == null ? '' : _displayDateFormat.format(expiresAt);
@@ -116,9 +118,9 @@ class _SubscriptionsPageState extends ConsumerState<SubscriptionsPage> {
   Future<void> _save() async {
     final userSnapshot = _userSnapshot;
     if (userSnapshot == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Search for a user first.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Search for a user first.')));
       return;
     }
     if (_expiresAt == null) {
@@ -136,14 +138,14 @@ class _SubscriptionsPageState extends ConsumerState<SubscriptionsPage> {
         'subExpires': Timestamp.fromDate(_expiresAt!),
       });
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Subscription info saved.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Subscription info saved.')));
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Save failed: $error')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Save failed: $error')));
     } finally {
       if (mounted) {
         setState(() => _saving = false);
@@ -165,7 +167,10 @@ class _SubscriptionsPageState extends ConsumerState<SubscriptionsPage> {
               crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 ConstrainedBox(
-                  constraints: const BoxConstraints(minWidth: 260, maxWidth: 360),
+                  constraints: const BoxConstraints(
+                    minWidth: 260,
+                    maxWidth: 360,
+                  ),
                   child: TextField(
                     controller: _phoneController,
                     keyboardType: TextInputType.phone,
@@ -198,16 +203,17 @@ class _SubscriptionsPageState extends ConsumerState<SubscriptionsPage> {
                       vertical: 16,
                     ),
                   ),
-                  child: _searching
-                      ? const SizedBox(
-                          height: 18,
-                          width: 18,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Color(0xFFD4AF37),
-                          ),
-                        )
-                      : const Text('অনুসন্ধান করুন'),
+                  child:
+                      _searching
+                          ? const SizedBox(
+                            height: 18,
+                            width: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Color(0xFFD4AF37),
+                            ),
+                          )
+                          : const Text('অনুসন্ধান করুন'),
                 ),
               ],
             ),
@@ -290,16 +296,17 @@ class _SubscriptionsPageState extends ConsumerState<SubscriptionsPage> {
                     foregroundColor: Colors.black,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
-                  child: _saving
-                      ? const SizedBox(
-                          height: 18,
-                          width: 18,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.black,
-                          ),
-                        )
-                      : const Text('সাবস্ক্রিপশন তথ্য সংরক্ষণ করুন'),
+                  child:
+                      _saving
+                          ? const SizedBox(
+                            height: 18,
+                            width: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.black,
+                            ),
+                          )
+                          : const Text('সাবস্ক্রিপশন তথ্য সংরক্ষণ করুন'),
                 ),
               ),
             ],
@@ -340,10 +347,7 @@ class _UserProfileCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            name,
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
+          Text(name, style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 6),
           Text('Phone: $phone'),
           const Divider(height: 24),

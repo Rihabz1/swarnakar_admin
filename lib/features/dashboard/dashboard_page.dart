@@ -13,15 +13,11 @@ final _usersCountProvider = StreamProvider<int>((ref) {
 final _subscriptionsCountProvider = StreamProvider<int>((ref) {
   return ref
       .watch(adminFirestoreServiceProvider)
-      .watchCollection('subscriptions')
-      .map((docs) => docs.length);
-});
-
-final _presetsCountProvider = StreamProvider<int>((ref) {
-  return ref
-      .watch(adminFirestoreServiceProvider)
-      .watchCollection('calculator_presets')
-      .map((docs) => docs.length);
+      .watchCollection('users')
+      .map(
+        (docs) =>
+            docs.where((doc) => doc.data()['isSubscribed'] == true).length,
+      );
 });
 
 final _priceHistoryCountProvider = StreamProvider<int>((ref) {
@@ -37,21 +33,12 @@ class DashboardPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final usersCount = ref.watch(_usersCountProvider).valueOrNull;
-    final presetsCount = ref.watch(_presetsCountProvider).valueOrNull;
-    final priceHistoryCount =
-        ref.watch(_priceHistoryCountProvider).valueOrNull;
+    final priceHistoryCount = ref.watch(_priceHistoryCountProvider).valueOrNull;
     final subscriptionsCount =
         ref.watch(_subscriptionsCountProvider).valueOrNull;
 
     final cards = [
-      _StatCard(
-        title: 'Users',
-        value: usersCount?.toString() ?? '...',
-      ),
-      _StatCard(
-        title: 'Presets',
-        value: presetsCount?.toString() ?? '...',
-      ),
+      _StatCard(title: 'Users', value: usersCount?.toString() ?? '...'),
       _StatCard(
         title: 'Price updates',
         value: priceHistoryCount?.toString() ?? '...',
@@ -67,11 +54,7 @@ class DashboardPage extends ConsumerWidget {
       children: [
         Text('Overview', style: Theme.of(context).textTheme.headlineSmall),
         const SizedBox(height: 16),
-        Wrap(
-          spacing: 16,
-          runSpacing: 16,
-          children: cards,
-        ),
+        Wrap(spacing: 16, runSpacing: 16, children: cards),
         const SizedBox(height: 24),
         Card(
           child: Padding(
@@ -79,11 +62,13 @@ class DashboardPage extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Quick actions',
-                    style: Theme.of(context).textTheme.titleMedium),
+                Text(
+                  'Quick actions',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
                 const SizedBox(height: 12),
                 const Text(
-                  'Use the side navigation to manage prices, presets, and more.',
+                  'Use the side navigation to manage prices, users, and more.',
                 ),
               ],
             ),

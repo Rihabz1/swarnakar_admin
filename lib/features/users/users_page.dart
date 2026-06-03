@@ -7,10 +7,10 @@ import '../../widgets/section_card.dart';
 
 final usersProvider =
     StreamProvider<List<QueryDocumentSnapshot<Map<String, dynamic>>>>((ref) {
-  return ref
-      .watch(adminFirestoreServiceProvider)
-      .watchCollection('users', orderBy: 'createdAt', descending: true);
-});
+      return ref
+          .watch(adminFirestoreServiceProvider)
+          .watchCollection('users', orderBy: 'createdAt', descending: true);
+    });
 
 class UsersPage extends ConsumerWidget {
   const UsersPage({super.key});
@@ -74,29 +74,39 @@ class UsersPage extends ConsumerWidget {
             ],
             rows: [
               for (final doc in docs)
-                DataRow(cells: [
-                  DataCell(Text(doc.data()['name']?.toString() ?? '--')),
-                  DataCell(Text(doc.data()['phone']?.toString() ?? '--')),
-                  DataCell(
-                    Text(
-                      doc.data()['isSubscribed'] == true ? 'Active' : 'Inactive',
+                DataRow(
+                  cells: [
+                    DataCell(Text(doc.data()['name']?.toString() ?? '--')),
+                    DataCell(Text(doc.data()['phone']?.toString() ?? '--')),
+                    DataCell(
+                      Text(
+                        doc.data()['isSubscribed'] == true
+                            ? 'Active'
+                            : 'Inactive',
+                      ),
                     ),
-                  ),
-                  DataCell(
-                    DropdownButton<String>(
-                      value: doc.data()['role']?.toString() ?? 'staff',
-                      items: const [
-                        DropdownMenuItem(value: 'admin', child: Text('Admin')),
-                        DropdownMenuItem(value: 'staff', child: Text('Staff')),
-                      ],
-                      onChanged: (value) {
-                        if (value != null) {
-                          _updateRole(ref, doc.id, value);
-                        }
-                      },
+                    DataCell(
+                      DropdownButton<String>(
+                        value: doc.data()['role']?.toString() ?? 'staff',
+                        items: const [
+                          DropdownMenuItem(
+                            value: 'admin',
+                            child: Text('Admin'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'staff',
+                            child: Text('Staff'),
+                          ),
+                        ],
+                        onChanged: (value) {
+                          if (value != null) {
+                            _updateRole(ref, doc.id, value);
+                          }
+                        },
+                      ),
                     ),
-                  ),
-                ]),
+                  ],
+                ),
             ],
           ),
         );

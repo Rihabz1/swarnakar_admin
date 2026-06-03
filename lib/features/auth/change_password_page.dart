@@ -55,9 +55,9 @@ class _ChangePasswordPageState extends ConsumerState<ChangePasswordPage> {
       );
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Update failed: $error')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Update failed: $error')));
     } finally {
       if (mounted) {
         setState(() => _loading = false);
@@ -100,9 +100,7 @@ class _ChangePasswordPageState extends ConsumerState<ChangePasswordPage> {
                   enableSuggestions: false,
                   autocorrect: false,
                   obscureText: true,
-                  decoration: const InputDecoration(
-                    labelText: 'New password',
-                  ),
+                  decoration: const InputDecoration(labelText: 'New password'),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'New password is required.';
@@ -139,13 +137,14 @@ class _ChangePasswordPageState extends ConsumerState<ChangePasswordPage> {
                   alignment: Alignment.centerLeft,
                   child: ElevatedButton(
                     onPressed: _loading ? null : _changePassword,
-                    child: _loading
-                        ? const SizedBox(
-                            height: 18,
-                            width: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Text('Update password'),
+                    child:
+                        _loading
+                            ? const SizedBox(
+                              height: 18,
+                              width: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                            : const Text('Update password'),
                   ),
                 ),
               ],

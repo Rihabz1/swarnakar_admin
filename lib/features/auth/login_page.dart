@@ -30,15 +30,17 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     }
     setState(() => _loading = true);
     try {
-      await ref.read(authServiceProvider).signInWithEmail(
+      await ref
+          .read(authServiceProvider)
+          .signInWithEmail(
             email: _emailController.text.trim(),
             password: _passwordController.text,
           );
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Sign in failed: $error')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Sign in failed: $error')));
     } finally {
       if (mounted) {
         setState(() => _loading = false);
@@ -52,9 +54,9 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       await ref.read(authServiceProvider).signInWithGoogle();
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Google sign in failed: $error')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Google sign in failed: $error')));
     } finally {
       if (mounted) {
         setState(() => _loading = false);
@@ -108,9 +110,11 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                             decoration: InputDecoration(
                               labelText: 'Password',
                               suffixIcon: IconButton(
-                                icon: Icon(_obscurePassword
-                                    ? Icons.visibility
-                                    : Icons.visibility_off),
+                                icon: Icon(
+                                  _obscurePassword
+                                      ? Icons.visibility
+                                      : Icons.visibility_off,
+                                ),
                                 onPressed: () {
                                   setState(() {
                                     _obscurePassword = !_obscurePassword;
@@ -130,15 +134,16 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                             width: double.infinity,
                             child: ElevatedButton(
                               onPressed: _loading ? null : _signInWithEmail,
-                              child: _loading
-                                  ? const SizedBox(
-                                      height: 18,
-                                      width: 18,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                      ),
-                                    )
-                                  : const Text('Sign in'),
+                              child:
+                                  _loading
+                                      ? const SizedBox(
+                                        height: 18,
+                                        width: 18,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                        ),
+                                      )
+                                      : const Text('Sign in'),
                             ),
                           ),
                           const SizedBox(height: 12),

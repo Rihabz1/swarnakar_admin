@@ -1,11 +1,7 @@
 import 'package:flutter/material.dart';
 
 class NavItem {
-  const NavItem({
-    required this.label,
-    required this.route,
-    required this.icon,
-  });
+  const NavItem({required this.label, required this.route, required this.icon});
 
   final String label;
   final String route;
@@ -15,11 +11,6 @@ class NavItem {
 const List<NavItem> adminNavItems = [
   NavItem(label: 'Dashboard', route: '/', icon: Icons.dashboard_outlined),
   NavItem(label: 'Prices', route: '/prices', icon: Icons.price_change_outlined),
-  NavItem(
-    label: 'Calculator Presets',
-    route: '/calculator-presets',
-    icon: Icons.calculate_outlined,
-  ),
   NavItem(label: 'Users', route: '/users', icon: Icons.people_outline),
   NavItem(
     label: 'Subscriptions',
@@ -27,8 +18,6 @@ const List<NavItem> adminNavItems = [
     icon: Icons.subscriptions_outlined,
   ),
   NavItem(label: 'Zakat', route: '/zakat', icon: Icons.balance_outlined),
-  NavItem(label: 'Settings', route: '/settings', icon: Icons.settings_outlined),
-  NavItem(label: 'Reports', route: '/reports', icon: Icons.receipt_long_outlined),
   NavItem(
     label: 'Change Password',
     route: '/change-password',

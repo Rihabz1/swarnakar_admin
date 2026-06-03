@@ -24,10 +24,7 @@ class SectionCard extends StatelessWidget {
             Text(title, style: theme.textTheme.titleMedium),
             const SizedBox(height: 16),
             child,
-            if (footer != null) ...[
-              const SizedBox(height: 16),
-              footer!,
-            ],
+            if (footer != null) ...[const SizedBox(height: 16), footer!],
           ],
         ),
       ),

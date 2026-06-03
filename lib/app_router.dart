@@ -9,12 +9,9 @@ import 'features/auth/access_denied_page.dart';
 import 'features/auth/change_password_page.dart';
 import 'features/dashboard/dashboard_page.dart';
 import 'features/prices/prices_page.dart';
-import 'features/calculator_presets/calculator_presets_page.dart';
 import 'features/users/users_page.dart';
 import 'features/subscriptions/subscriptions_page.dart';
 import 'features/zakat/zakat_page.dart';
-import 'features/settings/settings_page.dart';
-import 'features/reports/reports_page.dart';
 
 final goRouterProvider = Provider<GoRouter>((ref) {
   final authService = ref.read(authServiceProvider);
@@ -36,10 +33,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
-      GoRoute(
-        path: '/login',
-        builder: (context, state) => const LoginPage(),
-      ),
+      GoRoute(path: '/login', builder: (context, state) => const LoginPage()),
       GoRoute(
         path: '/access-denied',
         builder: (context, state) => const AccessDeniedPage(),
@@ -56,10 +50,6 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const PricesPage(),
           ),
           GoRoute(
-            path: '/calculator-presets',
-            builder: (context, state) => const CalculatorPresetsPage(),
-          ),
-          GoRoute(
             path: '/users',
             builder: (context, state) => const UsersPage(),
           ),
@@ -70,14 +60,6 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/zakat',
             builder: (context, state) => const ZakatPage(),
-          ),
-          GoRoute(
-            path: '/settings',
-            builder: (context, state) => const SettingsPage(),
-          ),
-          GoRoute(
-            path: '/reports',
-            builder: (context, state) => const ReportsPage(),
           ),
           GoRoute(
             path: '/change-password',

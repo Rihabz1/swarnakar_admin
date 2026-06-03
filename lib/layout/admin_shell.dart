@@ -22,9 +22,10 @@ class _AdminShellState extends ConsumerState<AdminShell> {
   @override
   void initState() {
     super.initState();
-    _roleSubscription = ref.listenManual<AsyncValue<bool>>(
-      adminRoleProvider,
-      (previous, next) {
+    _roleSubscription = ref.listenManual<AsyncValue<bool>>(adminRoleProvider, (
+      previous,
+      next,
+    ) {
       final user = ref.read(authServiceProvider).currentUser;
       if (next.hasValue && next.value == false && user != null) {
         if (!_signedOutForAccess) {
@@ -32,8 +33,7 @@ class _AdminShellState extends ConsumerState<AdminShell> {
           ref.read(authServiceProvider).signOut();
         }
       }
-    },
-    );
+    });
   }
 
   @override
@@ -46,14 +46,13 @@ class _AdminShellState extends ConsumerState<AdminShell> {
   Widget build(BuildContext context) {
     final roleStatus = ref.watch(adminRoleProvider);
     return roleStatus.when(
-      loading: () => const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      ),
-      error: (error, _) => Scaffold(
-        body: Center(
-          child: Text('Failed to load admin access: $error'),
-        ),
-      ),
+      loading:
+          () =>
+              const Scaffold(body: Center(child: CircularProgressIndicator())),
+      error:
+          (error, _) => Scaffold(
+            body: Center(child: Text('Failed to load admin access: $error')),
+          ),
       data: (isAdmin) {
         if (!isAdmin) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -94,8 +93,10 @@ class _AdminScaffold extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Swarnakar Admin',
-                    style: Theme.of(context).textTheme.titleLarge),
+                Text(
+                  'Swarnakar Admin',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
                 const SizedBox(height: 8),
                 Text(userEmail, style: Theme.of(context).textTheme.bodySmall),
               ],
@@ -162,17 +163,12 @@ class _AdminScaffold extends ConsumerWidget {
               Container(
                 width: 260,
                 decoration: BoxDecoration(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .surfaceContainerHighest,
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
                 ),
                 child: rail,
               ),
             Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: child,
-              ),
+              child: Padding(padding: const EdgeInsets.all(24), child: child),
             ),
           ],
         ),

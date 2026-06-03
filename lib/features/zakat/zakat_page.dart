@@ -1,21 +1,14 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
 import '../../providers/auth_providers.dart';
 import '../../widgets/section_card.dart';
 
-final zakatYearProvider = StateProvider<int>((ref) {
-  return DateTime.now().year;
+final zakatNisabProvider = FutureProvider<Map<String, dynamic>?>((ref) {
+  return ref.watch(adminFirestoreServiceProvider).getDoc('zakat', 'nisab');
 });
-
-final zakatDocProvider = FutureProvider.family<Map<String, dynamic>?, int>(
-  (ref, year) {
-    return ref
-        .watch(adminFirestoreServiceProvider)
-        .getDoc('zakat', year.toString());
-  },
-);
 
 class ZakatPage extends ConsumerStatefulWidget {
   const ZakatPage({super.key});
@@ -26,39 +19,31 @@ class ZakatPage extends ConsumerStatefulWidget {
 
 class _ZakatPageState extends ConsumerState<ZakatPage> {
   final _formKey = GlobalKey<FormState>();
-  final _yearController = TextEditingController();
-  final _nisabController = TextEditingController();
-  final _assetsController = TextEditingController();
-  final _liabilitiesController = TextEditingController();
-  final _zakatDueController = TextEditingController();
-  int? _loadedYear;
+  final _goldNisabController = TextEditingController();
+  final _silverNisabController = TextEditingController();
   bool _saving = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _yearController.text = DateTime.now().year.toString();
-  }
+  bool _initialized = false;
+  DateTime? _lastUpdate;
 
   @override
   void dispose() {
-    _yearController.dispose();
-    _nisabController.dispose();
-    _assetsController.dispose();
-    _liabilitiesController.dispose();
-    _zakatDueController.dispose();
+    _goldNisabController.dispose();
+    _silverNisabController.dispose();
     super.dispose();
   }
 
-  void _syncFields(Map<String, dynamic>? data, int year) {
-    if (_loadedYear == year) {
+  void _syncFields(Map<String, dynamic>? data) {
+    if (_initialized) {
       return;
     }
-    _nisabController.text = _formatNumber(data?['nisab']);
-    _assetsController.text = _formatNumber(data?['assets']);
-    _liabilitiesController.text = _formatNumber(data?['liabilities']);
-    _zakatDueController.text = _formatNumber(data?['zakatDue']);
-    _loadedYear = year;
+    if (data != null) {
+      _goldNisabController.text = _formatNumber(data['gold_nisab']);
+      _silverNisabController.text = _formatNumber(data['silver_nisab']);
+      if (data['lastUpdate'] is Timestamp) {
+        _lastUpdate = (data['lastUpdate'] as Timestamp).toDate();
+      }
+    }
+    _initialized = true;
   }
 
   String _formatNumber(dynamic value) {
@@ -76,45 +61,34 @@ class _ZakatPageState extends ConsumerState<ZakatPage> {
     return null;
   }
 
-  Future<void> _loadYear() async {
-    final parsed = int.tryParse(_yearController.text.trim());
-    if (parsed == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Enter a valid year.')),
-      );
-      return;
-    }
-    ref.read(zakatYearProvider.notifier).state = parsed;
-  }
-
-  Future<void> _save(int year) async {
+  Future<void> _save() async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
     setState(() => _saving = true);
     try {
       final service = ref.read(adminFirestoreServiceProvider);
-      final existing = await service.getDoc('zakat', year.toString());
       final data = <String, dynamic>{
-        'nisab': double.parse(_nisabController.text.trim()),
-        'assets': double.parse(_assetsController.text.trim()),
-        'liabilities': double.parse(_liabilitiesController.text.trim()),
-        'zakatDue': double.parse(_zakatDueController.text.trim()),
-        'updatedAt': FieldValue.serverTimestamp(),
+        'gold_nisab': double.parse(_goldNisabController.text.trim()),
+        'silver_nisab': double.parse(_silverNisabController.text.trim()),
+        'lastUpdate': FieldValue.serverTimestamp(),
       };
-      if (existing == null) {
-        data['createdAt'] = FieldValue.serverTimestamp();
-      }
-      await service.setDoc('zakat', year.toString(), data);
+      await service.setDoc('zakat', 'nisab', data);
+
+      // Update local lastUpdate display
+      setState(() {
+        _lastUpdate = DateTime.now();
+      });
+
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Zakat updated.')),
+        const SnackBar(content: Text('Zakat Nisab thresholds updated.')),
       );
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Update failed: $error')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Update failed: $error')));
     } finally {
       if (mounted) {
         setState(() => _saving = false);
@@ -124,72 +98,52 @@ class _ZakatPageState extends ConsumerState<ZakatPage> {
 
   @override
   Widget build(BuildContext context) {
-    final year = ref.watch(zakatYearProvider);
-    final zakatAsync = ref.watch(zakatDocProvider(year));
+    final zakatAsync = ref.watch(zakatNisabProvider);
 
     if (zakatAsync.hasValue) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        _syncFields(zakatAsync.value, year);
+        _syncFields(zakatAsync.value);
       });
     }
 
     return SingleChildScrollView(
       child: SectionCard(
-        title: 'Zakat',
+        title: 'Global Zakat Thresholds (Nisab)',
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Expanded(
-                  child: TextFormField(
-                    controller: _yearController,
-                    decoration: const InputDecoration(labelText: 'Year'),
-                    keyboardType: TextInputType.number,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                ElevatedButton(
-                  onPressed: _loadYear,
-                  child: const Text('Load'),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            if (zakatAsync.isLoading && _loadedYear != year)
+            if (zakatAsync.isLoading && !_initialized)
               const Padding(
                 padding: EdgeInsets.only(bottom: 12),
                 child: LinearProgressIndicator(),
+              ),
+            if (_lastUpdate != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: Text(
+                  'Last updated: ${DateFormat.yMMMd().add_jm().format(_lastUpdate!)}',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
               ),
             Form(
               key: _formKey,
               child: Column(
                 children: [
                   TextFormField(
-                    controller: _nisabController,
+                    controller: _goldNisabController,
                     keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(labelText: 'Nisab'),
+                    decoration: const InputDecoration(
+                      labelText: 'Gold Nisab Threshold (in grams)',
+                    ),
                     validator: _requiredNumber,
                   ),
                   const SizedBox(height: 16),
                   TextFormField(
-                    controller: _assetsController,
+                    controller: _silverNisabController,
                     keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(labelText: 'Assets'),
-                    validator: _requiredNumber,
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _liabilitiesController,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(labelText: 'Liabilities'),
-                    validator: _requiredNumber,
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _zakatDueController,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(labelText: 'Zakat due'),
+                    decoration: const InputDecoration(
+                      labelText: 'Silver Nisab Threshold (in grams)',
+                    ),
                     validator: _requiredNumber,
                   ),
                 ],
@@ -199,14 +153,15 @@ class _ZakatPageState extends ConsumerState<ZakatPage> {
             Align(
               alignment: Alignment.centerLeft,
               child: ElevatedButton(
-                onPressed: _saving ? null : () => _save(year),
-                child: _saving
-                    ? const SizedBox(
-                        height: 18,
-                        width: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Text('Save zakat'),
+                onPressed: _saving ? null : _save,
+                child:
+                    _saving
+                        ? const SizedBox(
+                          height: 18,
+                          width: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                        : const Text('Save Thresholds'),
               ),
             ),
           ],

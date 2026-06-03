@@ -7,9 +7,7 @@ import '../../providers/auth_providers.dart';
 import '../../widgets/section_card.dart';
 
 final pricesProvider = StreamProvider<Map<String, dynamic>?>((ref) {
-  return ref
-      .watch(adminFirestoreServiceProvider)
-      .watchDoc('prices', 'current');
+  return ref.watch(adminFirestoreServiceProvider).watchDoc('prices', 'current');
 });
 
 class PricesPage extends ConsumerStatefulWidget {
@@ -34,7 +32,7 @@ class _PricesPageState extends ConsumerState<PricesPage> {
     'silver_chandi': TextEditingController(),
   };
   late final ProviderSubscription<AsyncValue<Map<String, dynamic>?>>
-      _pricesSubscription;
+  _pricesSubscription;
   bool _initialized = false;
   bool _saving = false;
 
@@ -55,19 +53,22 @@ class _PricesPageState extends ConsumerState<PricesPage> {
   void initState() {
     super.initState();
     _pricesSubscription = ref.listenManual<AsyncValue<Map<String, dynamic>?>>(
-        pricesProvider, (prev, next) {
-      if (!next.hasValue || _initialized) {
-        return;
-      }
-      final data = next.value;
-      if (data != null) {
-        for (final field in _fields) {
-          _controllers[field.keyName]?.text =
-              _formatNumber(data[field.keyName]);
+      pricesProvider,
+      (prev, next) {
+        if (!next.hasValue || _initialized) {
+          return;
         }
-      }
-      _initialized = true;
-    });
+        final data = next.value;
+        if (data != null) {
+          for (final field in _fields) {
+            _controllers[field.keyName]?.text = _formatNumber(
+              data[field.keyName],
+            );
+          }
+        }
+        _initialized = true;
+      },
+    );
   }
 
   @override
@@ -115,22 +116,19 @@ class _PricesPageState extends ConsumerState<PricesPage> {
       final service = ref.read(adminFirestoreServiceProvider);
       final data = <String, dynamic>{
         for (final field in _fields)
-          field.keyName:
-              double.parse(_controllers[field.keyName]!.text.trim()),
+          field.keyName: double.parse(_controllers[field.keyName]!.text.trim()),
         'updatedAt': FieldValue.serverTimestamp(),
       };
-      await service.setDoc('prices', 'current', {
-        ...data,
-      });
+      await service.setDoc('prices', 'current', {...data});
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Prices updated.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Prices updated.')));
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Update failed: $error')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Update failed: $error')));
     } finally {
       if (mounted) {
         setState(() => _saving = false);
@@ -141,7 +139,9 @@ class _PricesPageState extends ConsumerState<PricesPage> {
   @override
   Widget build(BuildContext context) {
     final pricesAsync = ref.watch(pricesProvider);
-    final updatedAtText = _formatUpdatedAt(pricesAsync.valueOrNull?['updatedAt']);
+    final updatedAtText = _formatUpdatedAt(
+      pricesAsync.valueOrNull?['updatedAt'],
+    );
     final theme = Theme.of(context);
     return SingleChildScrollView(
       child: SectionCard(
@@ -162,9 +162,7 @@ class _PricesPageState extends ConsumerState<PricesPage> {
                     TextFormField(
                       controller: _controllers[field.keyName],
                       keyboardType: TextInputType.number,
-                      decoration: InputDecoration(
-                        labelText: field.label,
-                      ),
+                      decoration: InputDecoration(labelText: field.label),
                       validator: _requiredNumber,
                     ),
                     const SizedBox(height: 16),
@@ -177,21 +175,23 @@ class _PricesPageState extends ConsumerState<PricesPage> {
               alignment: Alignment.centerLeft,
               child: ElevatedButton(
                 onPressed: _saving ? null : _save,
-                child: _saving
-                    ? const SizedBox(
-                        height: 18,
-                        width: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Text('Save prices'),
+                child:
+                    _saving
+                        ? const SizedBox(
+                          height: 18,
+                          width: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                        : const Text('Save prices'),
               ),
             ),
             if (updatedAtText != null) ...[
               const SizedBox(height: 12),
               Text(
                 'Last updated: $updatedAtText',
-                style: theme.textTheme.bodySmall
-                    ?.copyWith(color: theme.hintColor),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.hintColor,
+                ),
               ),
             ],
           ],

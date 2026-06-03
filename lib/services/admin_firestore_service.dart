@@ -14,7 +14,10 @@ class AdminFirestoreService {
   }
 
   Stream<Map<String, dynamic>?> watchDoc(String collection, String docId) {
-    return doc(collection, docId).snapshots().map((snapshot) => snapshot.data());
+    return doc(
+      collection,
+      docId,
+    ).snapshots().map((snapshot) => snapshot.data());
   }
 
   Future<Map<String, dynamic>?> getDoc(String collection, String docId) async {
