@@ -8,6 +8,7 @@ import 'features/auth/login_page.dart';
 import 'features/auth/access_denied_page.dart';
 import 'features/auth/change_password_page.dart';
 import 'features/dashboard/dashboard_page.dart';
+import 'features/notices/notice_page.dart';
 import 'features/prices/prices_page.dart';
 import 'features/users/users_page.dart';
 import 'features/subscriptions/subscriptions_page.dart';
@@ -48,6 +49,10 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/prices',
             builder: (context, state) => const PricesPage(),
+          ),
+          GoRoute(
+            path: '/notice',
+            builder: (context, state) => const NoticePage(),
           ),
           GoRoute(
             path: '/users',

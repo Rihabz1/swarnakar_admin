@@ -4,11 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../providers/auth_providers.dart';
+import '../../services/session_document_cache.dart';
 import '../../widgets/section_card.dart';
-
-final zakatNisabProvider = FutureProvider<Map<String, dynamic>?>((ref) {
-  return ref.watch(adminFirestoreServiceProvider).getDoc('zakat', 'nisab');
-});
 
 class ZakatPage extends ConsumerStatefulWidget {
   const ZakatPage({super.key});
@@ -23,19 +20,37 @@ class _ZakatPageState extends ConsumerState<ZakatPage> {
   final _silverNisabController = TextEditingController();
   bool _saving = false;
   bool _initialized = false;
+  bool _hasUserEdited = false;
+  bool _syncingFromDatabase = false;
+  bool _loading = false;
+  String? _errorMessage;
   DateTime? _lastUpdate;
 
   @override
+  void initState() {
+    super.initState();
+    _goldNisabController.addListener(_markUserEdited);
+    _silverNisabController.addListener(_markUserEdited);
+    _loadZakat();
+  }
+
+  @override
   void dispose() {
+    _goldNisabController.removeListener(_markUserEdited);
+    _silverNisabController.removeListener(_markUserEdited);
     _goldNisabController.dispose();
     _silverNisabController.dispose();
     super.dispose();
   }
 
-  void _syncFields(Map<String, dynamic>? data) {
-    if (_initialized) {
-      return;
+  void _markUserEdited() {
+    if (_initialized && !_syncingFromDatabase) {
+      _hasUserEdited = true;
     }
+  }
+
+  void _syncFields(Map<String, dynamic>? data) {
+    _syncingFromDatabase = true;
     if (data != null) {
       _goldNisabController.text = _formatNumber(data['gold_nisab']);
       _silverNisabController.text = _formatNumber(data['silver_nisab']);
@@ -43,7 +58,47 @@ class _ZakatPageState extends ConsumerState<ZakatPage> {
         _lastUpdate = (data['lastUpdate'] as Timestamp).toDate();
       }
     }
+    _syncingFromDatabase = false;
     _initialized = true;
+  }
+
+  Future<void> _refresh() async {
+    _hasUserEdited = false;
+    await _loadZakat(forceRefresh: true);
+  }
+
+  Future<void> _loadZakat({bool forceRefresh = false}) async {
+    if (SessionDocumentCache.has('zakat', 'nisab') && !forceRefresh) {
+      final cached = SessionDocumentCache.get('zakat', 'nisab');
+      _syncFields(cached);
+      setState(() => _errorMessage = null);
+      return;
+    }
+
+    setState(() {
+      _loading = true;
+      _errorMessage = null;
+    });
+    try {
+      final data = await SessionDocumentCache.load(
+        ref.read(adminFirestoreServiceProvider),
+        'zakat',
+        'nisab',
+        forceRefresh: forceRefresh,
+      );
+      if (!mounted) return;
+      if (!_hasUserEdited) {
+        _syncFields(data);
+      }
+    } catch (error) {
+      if (!mounted) return;
+      _errorMessage =
+          'Failed to load zakat thresholds. Use Refresh to try again.';
+    } finally {
+      if (mounted) {
+        setState(() => _loading = false);
+      }
+    }
   }
 
   String _formatNumber(dynamic value) {
@@ -74,11 +129,8 @@ class _ZakatPageState extends ConsumerState<ZakatPage> {
         'lastUpdate': FieldValue.serverTimestamp(),
       };
       await service.setDoc('zakat', 'nisab', data);
-
-      // Update local lastUpdate display
-      setState(() {
-        _lastUpdate = DateTime.now();
-      });
+      _hasUserEdited = false;
+      await _loadZakat(forceRefresh: true);
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -98,24 +150,24 @@ class _ZakatPageState extends ConsumerState<ZakatPage> {
 
   @override
   Widget build(BuildContext context) {
-    final zakatAsync = ref.watch(zakatNisabProvider);
-
-    if (zakatAsync.hasValue) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _syncFields(zakatAsync.value);
-      });
-    }
-
     return SingleChildScrollView(
       child: SectionCard(
         title: 'Global Zakat Thresholds (Nisab)',
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (zakatAsync.isLoading && !_initialized)
+            if (_loading && !_initialized)
               const Padding(
                 padding: EdgeInsets.only(bottom: 12),
                 child: LinearProgressIndicator(),
+              ),
+            if (_errorMessage != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Text(
+                  _errorMessage!,
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                ),
               ),
             if (_lastUpdate != null)
               Padding(
@@ -150,19 +202,27 @@ class _ZakatPageState extends ConsumerState<ZakatPage> {
               ),
             ),
             const SizedBox(height: 24),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: ElevatedButton(
-                onPressed: _saving ? null : _save,
-                child:
-                    _saving
-                        ? const SizedBox(
-                          height: 18,
-                          width: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                        : const Text('Save Thresholds'),
-              ),
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: [
+                ElevatedButton(
+                  onPressed: _saving ? null : _save,
+                  child:
+                      _saving
+                          ? const SizedBox(
+                            height: 18,
+                            width: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                          : const Text('Save Thresholds'),
+                ),
+                OutlinedButton.icon(
+                  onPressed: _loading || _saving ? null : _refresh,
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Refresh'),
+                ),
+              ],
             ),
           ],
         ),

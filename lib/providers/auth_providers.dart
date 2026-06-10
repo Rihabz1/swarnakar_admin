@@ -16,17 +16,3 @@ final adminFirestoreServiceProvider = Provider<AdminFirestoreService>((ref) {
 final authUserProvider = StreamProvider<User?>((ref) {
   return ref.watch(authServiceProvider).authStateChanges();
 });
-
-final adminRoleProvider = StreamProvider<bool>((ref) {
-  final authService = ref.watch(authServiceProvider);
-  final firestoreService = ref.watch(adminFirestoreServiceProvider);
-  return authService.authStateChanges().asyncExpand((user) {
-    if (user == null) {
-      return Stream.value(false);
-    }
-    return firestoreService
-        .doc('users', user.uid)
-        .snapshots()
-        .map((snapshot) => snapshot.data()?['role'] == 'admin');
-  });
-});

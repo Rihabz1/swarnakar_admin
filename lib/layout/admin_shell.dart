@@ -17,54 +17,72 @@ class AdminShell extends ConsumerStatefulWidget {
 
 class _AdminShellState extends ConsumerState<AdminShell> {
   bool _signedOutForAccess = false;
-  ProviderSubscription<AsyncValue<bool>>? _roleSubscription;
+  bool _checkingAccess = true;
+  bool _isAdmin = false;
+  String? _accessError;
 
   @override
   void initState() {
     super.initState();
-    _roleSubscription = ref.listenManual<AsyncValue<bool>>(adminRoleProvider, (
-      previous,
-      next,
-    ) {
-      final user = ref.read(authServiceProvider).currentUser;
-      if (next.hasValue && next.value == false && user != null) {
-        if (!_signedOutForAccess) {
-          _signedOutForAccess = true;
-          ref.read(authServiceProvider).signOut();
-        }
-      }
-    });
+    _checkAccess();
   }
 
-  @override
-  void dispose() {
-    _roleSubscription?.close();
-    super.dispose();
+  Future<void> _checkAccess() async {
+    try {
+      final authService = ref.read(authServiceProvider);
+      final user = authService.currentUser;
+      if (user == null) {
+        if (!mounted) return;
+        setState(() {
+          _isAdmin = false;
+          _checkingAccess = false;
+        });
+        return;
+      }
+
+      final data = await ref
+          .read(adminFirestoreServiceProvider)
+          .getDoc('users', user.uid)
+          .timeout(const Duration(seconds: 15));
+      final isAdmin = data?['role'] == 'admin';
+      if (!isAdmin && !_signedOutForAccess) {
+        _signedOutForAccess = true;
+        await authService.signOut();
+      }
+      if (!mounted) return;
+      setState(() {
+        _isAdmin = isAdmin;
+        _checkingAccess = false;
+        _accessError = null;
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _checkingAccess = false;
+        _accessError = error.toString();
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final roleStatus = ref.watch(adminRoleProvider);
-    return roleStatus.when(
-      loading:
-          () =>
-              const Scaffold(body: Center(child: CircularProgressIndicator())),
-      error:
-          (error, _) => Scaffold(
-            body: Center(child: Text('Failed to load admin access: $error')),
-          ),
-      data: (isAdmin) {
-        if (!isAdmin) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted) {
-              context.go('/access-denied');
-            }
-          });
-          return const AccessDeniedPage();
+    if (_checkingAccess) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+    if (_accessError != null) {
+      return Scaffold(
+        body: Center(child: Text('Failed to load admin access: $_accessError')),
+      );
+    }
+    if (!_isAdmin) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          context.go('/access-denied');
         }
-        return _AdminScaffold(child: widget.child);
-      },
-    );
+      });
+      return const AccessDeniedPage();
+    }
+    return _AdminScaffold(child: widget.child);
   }
 }
 

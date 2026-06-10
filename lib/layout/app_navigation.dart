@@ -11,6 +11,7 @@ class NavItem {
 const List<NavItem> adminNavItems = [
   NavItem(label: 'Dashboard', route: '/', icon: Icons.dashboard_outlined),
   NavItem(label: 'Prices', route: '/prices', icon: Icons.price_change_outlined),
+  NavItem(label: 'Notice', route: '/notice', icon: Icons.campaign_outlined),
   NavItem(label: 'Users', route: '/users', icon: Icons.people_outline),
   NavItem(
     label: 'Subscriptions',

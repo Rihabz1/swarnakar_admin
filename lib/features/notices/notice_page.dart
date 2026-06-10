@@ -7,27 +7,16 @@ import '../../providers/auth_providers.dart';
 import '../../services/session_document_cache.dart';
 import '../../widgets/section_card.dart';
 
-class PricesPage extends ConsumerStatefulWidget {
-  const PricesPage({super.key});
+class NoticePage extends ConsumerStatefulWidget {
+  const NoticePage({super.key});
 
   @override
-  ConsumerState<PricesPage> createState() => _PricesPageState();
+  ConsumerState<NoticePage> createState() => _NoticePageState();
 }
 
-class _PricesPageState extends ConsumerState<PricesPage> {
+class _NoticePageState extends ConsumerState<NoticePage> {
   final _formKey = GlobalKey<FormState>();
-  final Map<String, TextEditingController> _controllers = {
-    'gold_21k': TextEditingController(),
-    'gold_21k_old': TextEditingController(),
-    'gold_22k': TextEditingController(),
-    'gold_22k_old': TextEditingController(),
-    'gold_paka': TextEditingController(),
-    'gold_tukra': TextEditingController(),
-    'silver_21k': TextEditingController(),
-    'silver_22k': TextEditingController(),
-    'silver_acid_kaim': TextEditingController(),
-    'silver_chandi': TextEditingController(),
-  };
+  final _noticeController = TextEditingController();
   bool _initialized = false;
   bool _hasUserEdited = false;
   bool _syncingFromDatabase = false;
@@ -36,26 +25,11 @@ class _PricesPageState extends ConsumerState<PricesPage> {
   String? _errorMessage;
   Map<String, dynamic>? _data;
 
-  final List<_PriceField> _fields = const [
-    _PriceField(keyName: 'gold_21k', label: 'Gold 21K'),
-    _PriceField(keyName: 'gold_21k_old', label: 'Gold 21K (Old)'),
-    _PriceField(keyName: 'gold_22k', label: 'Gold 22K'),
-    _PriceField(keyName: 'gold_22k_old', label: 'Gold 22K (Old)'),
-    _PriceField(keyName: 'gold_paka', label: 'Gold Paka'),
-    _PriceField(keyName: 'gold_tukra', label: 'Gold Tukra'),
-    _PriceField(keyName: 'silver_21k', label: 'Silver 21K'),
-    _PriceField(keyName: 'silver_22k', label: 'Silver 22K'),
-    _PriceField(keyName: 'silver_acid_kaim', label: 'Silver Acid Kaim'),
-    _PriceField(keyName: 'silver_chandi', label: 'Silver Chandi'),
-  ];
-
   @override
   void initState() {
     super.initState();
-    for (final controller in _controllers.values) {
-      controller.addListener(_markUserEdited);
-    }
-    _loadPrices();
+    _noticeController.addListener(_markUserEdited);
+    _loadNotice();
   }
 
   void _markUserEdited() {
@@ -64,27 +38,23 @@ class _PricesPageState extends ConsumerState<PricesPage> {
     }
   }
 
-  void _syncFields(Map<String, dynamic>? data) {
+  void _syncField(Map<String, dynamic>? data) {
     _syncingFromDatabase = true;
-    if (data != null) {
-      for (final field in _fields) {
-        _controllers[field.keyName]?.text = _formatNumber(data[field.keyName]);
-      }
-    }
+    _noticeController.text = data?['notice']?.toString() ?? '';
     _syncingFromDatabase = false;
     _initialized = true;
   }
 
   Future<void> _refresh() async {
     _hasUserEdited = false;
-    await _loadPrices(forceRefresh: true);
+    await _loadNotice(forceRefresh: true);
   }
 
-  Future<void> _loadPrices({bool forceRefresh = false}) async {
+  Future<void> _loadNotice({bool forceRefresh = false}) async {
     if (SessionDocumentCache.has('prices', 'current') && !forceRefresh) {
       final cached = SessionDocumentCache.get('prices', 'current');
       _data = cached;
-      _syncFields(cached);
+      _syncField(cached);
       setState(() => _errorMessage = null);
       return;
     }
@@ -103,11 +73,11 @@ class _PricesPageState extends ConsumerState<PricesPage> {
       if (!mounted) return;
       _data = data;
       if (!_hasUserEdited) {
-        _syncFields(data);
+        _syncField(data);
       }
     } catch (error) {
       if (!mounted) return;
-      _errorMessage = 'Failed to load prices. Use Refresh to try again.';
+      _errorMessage = 'Failed to load notice. Use Refresh to try again.';
     } finally {
       if (mounted) {
         setState(() => _loading = false);
@@ -117,26 +87,9 @@ class _PricesPageState extends ConsumerState<PricesPage> {
 
   @override
   void dispose() {
-    for (final controller in _controllers.values) {
-      controller.removeListener(_markUserEdited);
-      controller.dispose();
-    }
+    _noticeController.removeListener(_markUserEdited);
+    _noticeController.dispose();
     super.dispose();
-  }
-
-  String _formatNumber(dynamic value) {
-    if (value == null) return '';
-    return value.toString();
-  }
-
-  String? _requiredNumber(String? value) {
-    if (value == null || value.trim().isEmpty) {
-      return 'Required.';
-    }
-    if (double.tryParse(value.trim()) == null) {
-      return 'Enter a valid number.';
-    }
-    return null;
   }
 
   String? _formatUpdatedAt(dynamic value) {
@@ -158,18 +111,16 @@ class _PricesPageState extends ConsumerState<PricesPage> {
     setState(() => _saving = true);
     try {
       final service = ref.read(adminFirestoreServiceProvider);
-      final data = <String, dynamic>{
-        for (final field in _fields)
-          field.keyName: double.parse(_controllers[field.keyName]!.text.trim()),
+      await service.setDoc('prices', 'current', {
+        'notice': _noticeController.text,
         'updatedAt': FieldValue.serverTimestamp(),
-      };
-      await service.setDoc('prices', 'current', {...data});
+      });
       _hasUserEdited = false;
-      await _loadPrices(forceRefresh: true);
+      await _loadNotice(forceRefresh: true);
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Prices updated.')));
+      ).showSnackBar(const SnackBar(content: Text('Notice updated.')));
     } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(
@@ -186,9 +137,10 @@ class _PricesPageState extends ConsumerState<PricesPage> {
   Widget build(BuildContext context) {
     final updatedAtText = _formatUpdatedAt(_data?['updatedAt']);
     final theme = Theme.of(context);
+
     return SingleChildScrollView(
       child: SectionCard(
-        title: 'Current Prices',
+        title: 'Current Notice',
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -207,18 +159,14 @@ class _PricesPageState extends ConsumerState<PricesPage> {
               ),
             Form(
               key: _formKey,
-              child: Column(
-                children: [
-                  for (final field in _fields) ...[
-                    TextFormField(
-                      controller: _controllers[field.keyName],
-                      keyboardType: TextInputType.number,
-                      decoration: InputDecoration(labelText: field.label),
-                      validator: _requiredNumber,
-                    ),
-                    const SizedBox(height: 16),
-                  ],
-                ],
+              child: TextFormField(
+                controller: _noticeController,
+                minLines: 4,
+                maxLines: 8,
+                decoration: const InputDecoration(
+                  labelText: 'Notice',
+                  alignLabelWithHint: true,
+                ),
               ),
             ),
             const SizedBox(height: 24),
@@ -235,7 +183,7 @@ class _PricesPageState extends ConsumerState<PricesPage> {
                             width: 18,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
-                          : const Text('Save prices'),
+                          : const Text('Save notice'),
                 ),
                 OutlinedButton.icon(
                   onPressed: _loading || _saving ? null : _refresh,
@@ -258,11 +206,4 @@ class _PricesPageState extends ConsumerState<PricesPage> {
       ),
     );
   }
-}
-
-class _PriceField {
-  const _PriceField({required this.keyName, required this.label});
-
-  final String keyName;
-  final String label;
 }
